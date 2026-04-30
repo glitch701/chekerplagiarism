@@ -26,7 +26,13 @@ func (s *Storage) Save(docID, filename string, data []byte) error {
 	return nil
 }
 
-func (s *Storage) Delete(docID, ext string) error {
-	path := filepath.Join(s.dir, docID+ext)
-	return os.Remove(path)
+func (s *Storage) Delete(docID string) error {
+	matches, err := filepath.Glob(filepath.Join(s.dir, docID+".*"))
+	if err != nil {
+		return err
+	}
+	for _, path := range matches {
+		os.Remove(path)
+	}
+	return nil
 }

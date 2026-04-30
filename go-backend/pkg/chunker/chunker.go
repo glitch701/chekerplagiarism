@@ -48,6 +48,22 @@ func (c *Chunker) Chunk(text string) []string {
 	return chunks
 }
 
+// Sentences returns each sentence individually (for sentence-level matching).
+func (c *Chunker) Sentences(text string) []string {
+	if len(text) == 0 {
+		return nil
+	}
+	raw := splitSentences(text)
+	var result []string
+	for _, s := range raw {
+		s = strings.Join(strings.Fields(s), " ")
+		if len(s) >= c.minLen {
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
 // splitSentences splits text on ". ", "! ", "? " and newlines.
 func splitSentences(text string) []string {
 	var result []string

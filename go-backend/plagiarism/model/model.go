@@ -8,6 +8,13 @@ type Document struct {
 	ChunkCount int
 }
 
+type DocumentInfo struct {
+	DocID      string
+	DocName    string
+	Category   string
+	ChunkCount int
+}
+
 type Match struct {
 	UploadedChunk   string  `json:"uploaded_chunk"`
 	MatchedChunk    string  `json:"matched_chunk"`
@@ -38,4 +45,18 @@ type CheckResult struct {
 	PlagiarismPercent  float32 `json:"plagiarism_percent"`
 	OriginalityPercent float32 `json:"originality_percent"`
 	Matches            []Match `json:"matches"`
+}
+
+type TextSearchHit struct {
+	MatchedChunk    string  `json:"matched_chunk"`
+	MatchedDocument string  `json:"matched_document"`
+	MatchedDocID    string  `json:"matched_doc_id"`
+	Category        string  `json:"category"`
+	Similarity      float32 `json:"similarity"`
+}
+
+type TextSearchResult struct {
+	Query   string          `json:"query"`
+	Total   int             `json:"total"`
+	Hits    []TextSearchHit `json:"hits"`
 }

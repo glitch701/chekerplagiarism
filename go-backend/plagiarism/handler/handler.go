@@ -93,6 +93,54 @@ func (h *Handler) CheckPlagiarism(c echo.Context) error {
 	return c.JSON(http.StatusOK, dto.FromCheckResult(result))
 }
 
+// GET /api/v1/references
+func (h *Handler) ListReferences(c echo.Context) error {
+	docs, err := h.svc.ListReferences(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
+	}
+	return c.JSON(http.StatusOK, dto.FromDocumentInfoList(docs))
+}
+
+// DELETE /api/v1/reference/:id
+func (h *Handler) DeleteReference(c echo.Context) error {
+	docID := c.Param("id")
+	if docID == "" {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "doc_id is required"})
+	}
+	if err := h.svc.DeleteReference(c.Request().Context(), docID); err != nil {
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
+	}
+	return c.JSON(http.StatusOK, echo.Map{"success": true, "doc_id": docID})
+}
+
+// POST /api/v1/search
+func (h *Handler) SearchText(c echo.Context) error {
+	var req struct {
+		Query     string  `json:"query"`
+		Limit     int     `json:"limit"`
+		Threshold float32 `json:"threshold"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request body"})
+	}
+	if req.Query == "" {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "query is required"})
+	}
+	if req.Limit < 1 {
+		req.Limit = 5
+	}
+	if req.Threshold <= 0 {
+		req.Threshold = 0.65
+	}
+
+	result, err := h.svc.SearchText(c.Request().Context(), req.Query, req.Limit, req.Threshold)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
+	}
+	return c.JSON(http.StatusOK, dto.FromTextSearchResult(result))
+}
+
 // GET /health
 func (h *Handler) Health(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"status": "ok"})

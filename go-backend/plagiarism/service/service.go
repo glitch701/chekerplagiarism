@@ -15,8 +15,11 @@ import (
 
 type PlagiarismService interface {
 	UploadReference(ctx context.Context, filename, category string, data []byte) (*model.UploadResult, error)
+	ListReferences(ctx context.Context) ([]model.DocumentInfo, error)
+	DeleteReference(ctx context.Context, docID string) error
 	CheckSimilarity(ctx context.Context, filename string, data []byte, page, limit int) (*model.SimilarityResult, error)
 	CheckPlagiarism(ctx context.Context, filename string, data []byte) (*model.CheckResult, error)
+	SearchText(ctx context.Context, query string, limit int, threshold float32) (*model.TextSearchResult, error)
 }
 
 type plagiarismService struct {
@@ -57,7 +60,7 @@ func (s *plagiarismService) UploadReference(ctx context.Context, filename, categ
 		return nil, fmt.Errorf("extract: %w", err)
 	}
 
-	chunks := s.chunker.Chunk(text)
+	chunks := s.chunker.Sentences(text)
 	if len(chunks) == 0 {
 		return nil, fmt.Errorf("no text content found in document")
 	}
@@ -91,7 +94,7 @@ func (s *plagiarismService) CheckSimilarity(ctx context.Context, filename string
 		return nil, fmt.Errorf("extract: %w", err)
 	}
 
-	chunks := s.chunker.Chunk(text)
+	chunks := s.chunker.Sentences(text)
 	if len(chunks) == 0 {
 		return nil, fmt.Errorf("no text content found in document")
 	}
@@ -115,7 +118,7 @@ func (s *plagiarismService) CheckSimilarity(ctx context.Context, filename string
 	}
 
 	pageChunks := chunks[start:end]
-	embeddings, err := s.embedder.EmbedBatch(ctx, pageChunks)
+	embeddings, err := s.embedder.EmbedQuery(ctx, pageChunks)
 	if err != nil {
 		return nil, fmt.Errorf("embed: %w", err)
 	}
@@ -154,18 +157,78 @@ func (s *plagiarismService) CheckSimilarity(ctx context.Context, filename string
 	}, nil
 }
 
+func (s *plagiarismService) ListReferences(ctx context.Context) ([]model.DocumentInfo, error) {
+	docs, err := s.qdrant.ListDocuments(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list documents: %w", err)
+	}
+	result := make([]model.DocumentInfo, len(docs))
+	for i, d := range docs {
+		result[i] = model.DocumentInfo{
+			DocID:      d.DocID,
+			DocName:    d.DocName,
+			Category:   d.Category,
+			ChunkCount: d.ChunkCount,
+		}
+	}
+	return result, nil
+}
+
+func (s *plagiarismService) DeleteReference(ctx context.Context, docID string) error {
+	if err := s.qdrant.DeleteByDocID(ctx, docID); err != nil {
+		return fmt.Errorf("qdrant delete: %w", err)
+	}
+	s.storage.Delete(docID)
+	return nil
+}
+
+func (s *plagiarismService) SearchText(ctx context.Context, query string, limit int, threshold float32) (*model.TextSearchResult, error) {
+	if limit < 1 {
+		limit = 5
+	}
+	if threshold <= 0 {
+		threshold = s.threshold
+	}
+	embeddings, err := s.embedder.EmbedQuery(ctx, []string{query})
+	if err != nil {
+		return nil, fmt.Errorf("embed: %w", err)
+	}
+
+	results, err := s.qdrant.Search(ctx, embeddings[0], threshold, uint64(limit))
+	if err != nil {
+		return nil, fmt.Errorf("qdrant search: %w", err)
+	}
+
+	hits := make([]model.TextSearchHit, 0, len(results))
+	for _, r := range results {
+		hits = append(hits, model.TextSearchHit{
+			MatchedChunk:    r.Text,
+			MatchedDocument: r.DocName,
+			MatchedDocID:    r.DocID,
+			Category:        r.Category,
+			Similarity:      r.Score * 100,
+		})
+	}
+
+	return &model.TextSearchResult{
+		Query: query,
+		Total: len(hits),
+		Hits:  hits,
+	}, nil
+}
+
 func (s *plagiarismService) CheckPlagiarism(ctx context.Context, filename string, data []byte) (*model.CheckResult, error) {
 	text, err := s.extractor.ExtractFromBytes(filename, data)
 	if err != nil {
 		return nil, fmt.Errorf("extract: %w", err)
 	}
 
-	chunks := s.chunker.Chunk(text)
+	chunks := s.chunker.Sentences(text)
 	if len(chunks) == 0 {
 		return nil, fmt.Errorf("no text content found in document")
 	}
 
-	embeddings, err := s.embedder.EmbedBatch(ctx, chunks)
+	embeddings, err := s.embedder.EmbedQuery(ctx, chunks)
 	if err != nil {
 		return nil, fmt.Errorf("embed: %w", err)
 	}

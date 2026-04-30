@@ -102,6 +102,56 @@ func (c *Client) Search(ctx context.Context, embedding []float32, threshold floa
 	return results, nil
 }
 
+type DocumentInfo struct {
+	DocID      string
+	DocName    string
+	Category   string
+	ChunkCount int
+}
+
+func (c *Client) ListDocuments(ctx context.Context) ([]DocumentInfo, error) {
+	seen := make(map[string]*DocumentInfo)
+	var offset *qdrant.PointId
+
+	for {
+		points, next, err := c.inner.ScrollAndOffset(ctx, &qdrant.ScrollPoints{
+			CollectionName: c.collection,
+			WithPayload:    qdrant.NewWithPayload(true),
+			WithVectors:    qdrant.NewWithVectors(false),
+			Limit:          qdrant.PtrOf(uint32(100)),
+			Offset:         offset,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("qdrant scroll: %w", err)
+		}
+
+		for _, p := range points {
+			docID := p.Payload["doc_id"].GetStringValue()
+			if info, ok := seen[docID]; ok {
+				info.ChunkCount++
+			} else {
+				seen[docID] = &DocumentInfo{
+					DocID:      docID,
+					DocName:    p.Payload["doc_name"].GetStringValue(),
+					Category:   p.Payload["category"].GetStringValue(),
+					ChunkCount: 1,
+				}
+			}
+		}
+
+		if next == nil {
+			break
+		}
+		offset = next
+	}
+
+	docs := make([]DocumentInfo, 0, len(seen))
+	for _, info := range seen {
+		docs = append(docs, *info)
+	}
+	return docs, nil
+}
+
 func (c *Client) DeleteByDocID(ctx context.Context, docID string) error {
 	_, err := c.inner.Delete(ctx, &qdrant.DeletePoints{
 		CollectionName: c.collection,

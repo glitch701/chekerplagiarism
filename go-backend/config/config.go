@@ -9,18 +9,19 @@ import (
 )
 
 type Config struct {
-	ServerPort       string
-	UploadDir        string
-	QdrantHost       string
-	QdrantGRPCPort   int
-	QdrantCollection string
-	QdrantVectorSize uint64
-	EmbedderURL      string
-	EmbedderBatch    int
-	EmbedderTimeout  int
-	ChunkSize        int
-	ChunkOverlap     int
-	ChunkMinLen      int
+	ServerPort          string
+	UploadDir           string
+	QdrantHost          string
+	QdrantGRPCPort      int
+	QdrantCollection    string
+	QdrantVectorSize    uint64
+	EmbedderURL         string
+	EmbedderBatch       int
+	EmbedderTimeout     int
+	ChunkSize           int
+	ChunkOverlap        int
+	ChunkMinLen         int
+	SimilarityThreshold float32
 }
 
 func Load() Config {
@@ -37,9 +38,10 @@ func Load() Config {
 		EmbedderURL:      getOrDefault("EMBEDDER_URL", "http://localhost:5000"),
 		EmbedderBatch:    cast.ToInt(getOrDefault("EMBEDDER_BATCH_SIZE", "64")),
 		EmbedderTimeout:  cast.ToInt(getOrDefault("EMBEDDER_TIMEOUT_SEC", "300")),
-		ChunkSize:        cast.ToInt(getOrDefault("CHUNK_SIZE", "500")),
-		ChunkOverlap:     cast.ToInt(getOrDefault("CHUNK_OVERLAP", "100")),
-		ChunkMinLen:      cast.ToInt(getOrDefault("CHUNK_MIN_LEN", "50")),
+		ChunkSize:           cast.ToInt(getOrDefault("CHUNK_SIZE", "500")),
+		ChunkOverlap:        cast.ToInt(getOrDefault("CHUNK_OVERLAP", "100")),
+		ChunkMinLen:         cast.ToInt(getOrDefault("CHUNK_MIN_LEN", "50")),
+		SimilarityThreshold: cast.ToFloat32(getOrDefault("SIMILARITY_THRESHOLD", "0.88")),
 	}
 }
 

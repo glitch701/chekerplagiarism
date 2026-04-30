@@ -32,6 +32,7 @@ func main() {
 		Embedder:  embedder.New(cfg.EmbedderURL, cfg.EmbedderBatch, cfg.EmbedderTimeout),
 		Qdrant:    qdrant,
 		Storage:   stor,
+		Threshold: cfg.SimilarityThreshold,
 	})
 
 	h := handler.New(svc)

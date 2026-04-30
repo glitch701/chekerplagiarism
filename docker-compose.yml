@@ -5,7 +5,7 @@ services:
       - "6333:6333"
       - "6334:6334"
     volumes:
-      - qdrant_data:/qdrant/storage
+      - ./qdrant_storage:/qdrant/storage
 
   embedder:
     build: ./pyhton_core
@@ -30,13 +30,14 @@ services:
       QDRANT_HOST: "qdrant"
       QDRANT_GRPC_PORT: "6334"
       QDRANT_COLLECTION: "documents"
-      QDRANT_VECTOR_SIZE: "384"
+      QDRANT_VECTOR_SIZE: "768"
       EMBEDDER_URL: "http://embedder:5000"
       EMBEDDER_BATCH_SIZE: "64"
       EMBEDDER_TIMEOUT_SEC: "300"
       CHUNK_SIZE: "500"
       CHUNK_OVERLAP: "100"
-      CHUNK_MIN_LEN: "50"
+      CHUNK_MIN_LEN: "20"
+      SIMILARITY_THRESHOLD: "0.88"
     depends_on:
       qdrant:
         condition: service_started
@@ -44,5 +45,4 @@ services:
         condition: service_healthy
 
 volumes:
-  qdrant_data:
   uploads:

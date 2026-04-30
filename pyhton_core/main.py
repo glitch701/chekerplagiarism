@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from sentence_transformers import SentenceTransformer
 
 app = Flask(__name__)
-model = SentenceTransformer("intfloat/multilingual-e5-small")
+model = SentenceTransformer("intfloat/multilingual-e5-base")
 
 
 @app.get("/health")
@@ -14,9 +14,11 @@ def health():
 def embed_batch():
     data = request.get_json()
     texts = data.get("texts", [])
+    prefix = data.get("prefix", "passage")
     if not texts:
         return jsonify({"embeddings": []})
-    embeddings = model.encode(texts, normalize_embeddings=True).tolist()
+    prefixed = [f"{prefix}: {t}" for t in texts]
+    embeddings = model.encode(prefixed, normalize_embeddings=True).tolist()
     return jsonify({"embeddings": embeddings})
 
 
