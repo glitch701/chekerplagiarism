@@ -90,11 +90,13 @@ func (s *plagiarismService) UploadReference(ctx context.Context, filename, categ
 
 func (s *plagiarismService) CheckSimilarity(ctx context.Context, filename string, data []byte, page, limit int) (*model.SimilarityResult, error) {
 	text, err := s.extractor.ExtractFromBytes(filename, data)
+	
 	if err != nil {
 		return nil, fmt.Errorf("extract: %w", err)
 	}
 
 	chunks := s.chunker.Sentences(text)
+	
 	if len(chunks) == 0 {
 		return nil, fmt.Errorf("no text content found in document")
 	}
@@ -103,6 +105,7 @@ func (s *plagiarismService) CheckSimilarity(ctx context.Context, filename string
 	totalPages := (total + limit - 1) / limit
 
 	start := (page - 1) * limit
+	
 	if start >= total {
 		return &model.SimilarityResult{
 			Page:        page,
@@ -111,6 +114,7 @@ func (s *plagiarismService) CheckSimilarity(ctx context.Context, filename string
 			TotalPages:  totalPages,
 			Matches:     []model.Match{},
 		}, nil
+	
 	}
 	end := start + limit
 	if end > total {
@@ -156,6 +160,9 @@ func (s *plagiarismService) CheckSimilarity(ctx context.Context, filename string
 		Matches:     matches,
 	}, nil
 }
+
+
+
 
 func (s *plagiarismService) ListReferences(ctx context.Context) ([]model.DocumentInfo, error) {
 	docs, err := s.qdrant.ListDocuments(ctx)

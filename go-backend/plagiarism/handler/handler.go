@@ -19,6 +19,19 @@ func New(svc service.PlagiarismService) *Handler {
 	return &Handler{svc: svc}
 }
 
+func NewHandler(router *echo.Group, svc service.PlagiarismService) {
+	h := New(svc)
+	{
+		router.GET("/health", h.Health)
+		router.POST("/reference", h.UploadReference)
+		router.GET("/references", h.ListReferences)
+		router.DELETE("/reference/:id", h.DeleteReference)
+		router.POST("/similarity", h.CheckSimilarity)
+		router.POST("/plagiarism", h.CheckPlagiarism)
+		router.POST("/search", h.SearchText)
+	}
+}
+
 // POST /api/v1/reference
 func (h *Handler) UploadReference(c echo.Context) error {
 	category := c.FormValue("category")
@@ -119,7 +132,7 @@ func (h *Handler) SearchText(c echo.Context) error {
 	var req struct {
 		Query     string  `json:"query"`
 		Limit     int     `json:"limit"`
-		Threshold float32 `json:"threshold"`
+		Threshold float32 `json:"similarity"`
 	}
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request body"})
@@ -130,6 +143,7 @@ func (h *Handler) SearchText(c echo.Context) error {
 	if req.Limit < 1 {
 		req.Limit = 5
 	}
+	req.Threshold = req.Threshold / 100
 	if req.Threshold <= 0 {
 		req.Threshold = 0.65
 	}
@@ -141,7 +155,7 @@ func (h *Handler) SearchText(c echo.Context) error {
 	return c.JSON(http.StatusOK, dto.FromTextSearchResult(result))
 }
 
-// GET /health
+// GET /api/v1/health
 func (h *Handler) Health(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"status": "ok"})
 }
