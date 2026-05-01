@@ -143,12 +143,12 @@ func (h *Handler) SearchText(c echo.Context) error {
 	if req.Limit < 1 {
 		req.Limit = 5
 	}
-	req.Threshold = req.Threshold / 100
-	if req.Threshold <= 0 {
-		req.Threshold = 0.65
+	var threshold float32
+	if req.Threshold > 0 {
+		threshold = req.Threshold / 100
 	}
 
-	result, err := h.svc.SearchText(c.Request().Context(), req.Query, req.Limit, req.Threshold)
+	result, err := h.svc.SearchText(c.Request().Context(), req.Query, req.Limit, threshold)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}

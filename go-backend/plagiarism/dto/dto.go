@@ -20,11 +20,9 @@ type SimilarityResponse struct {
 }
 
 type PlagiarismResponse struct {
-	TotalChunks        int           `json:"total_chunks"`
-	MatchedChunks      int           `json:"matched_chunks"`
-	PlagiarismPercent  float32       `json:"plagiarism_percent"`
-	OriginalityPercent float32       `json:"originality_percent"`
-	Matches            []model.Match `json:"matches"`
+	TotalChunks   int           `json:"total_chunks"`
+	MatchedChunks int           `json:"matched_chunks"`
+	Matches       []model.Match `json:"matches"`
 }
 
 type DocumentInfoResponse struct {
@@ -115,10 +113,8 @@ func FromCheckResult(r *model.CheckResult) PlagiarismResponse {
 		matches = []model.Match{}
 	}
 	return PlagiarismResponse{
-		TotalChunks:        r.TotalChunks,
-		MatchedChunks:      r.MatchedChunks,
-		PlagiarismPercent:  r.PlagiarismPercent,
-		OriginalityPercent: r.OriginalityPercent,
-		Matches:            matches,
+		TotalChunks:   r.TotalChunks,
+		MatchedChunks: r.MatchedChunks,
+		Matches:       matches,
 	}
 }

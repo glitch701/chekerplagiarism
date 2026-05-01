@@ -40,11 +40,9 @@ type SimilarityResult struct {
 }
 
 type CheckResult struct {
-	TotalChunks        int     `json:"total_chunks"`
-	MatchedChunks      int     `json:"matched_chunks"`
-	PlagiarismPercent  float32 `json:"plagiarism_percent"`
-	OriginalityPercent float32 `json:"originality_percent"`
-	Matches            []Match `json:"matches"`
+	TotalChunks   int     `json:"total_chunks"`
+	MatchedChunks int     `json:"matched_chunks"`
+	Matches       []Match `json:"matches"`
 }
 
 type TextSearchHit struct {

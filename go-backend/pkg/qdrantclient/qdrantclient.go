@@ -78,13 +78,16 @@ func (c *Client) Upsert(ctx context.Context, docID, docName, category string, ch
 }
 
 func (c *Client) Search(ctx context.Context, embedding []float32, threshold float32, limit uint64) ([]SearchResult, error) {
-	scored, err := c.inner.Query(ctx, &qdrant.QueryPoints{
+	q := &qdrant.QueryPoints{
 		CollectionName: c.collection,
 		Query:          qdrant.NewQuery(embedding...),
 		Limit:          &limit,
-		ScoreThreshold: &threshold,
 		WithPayload:    qdrant.NewWithPayload(true),
-	})
+	}
+	if threshold > 0 {
+		q.ScoreThreshold = &threshold
+	}
+	scored, err := c.inner.Query(ctx, q)
 	if err != nil {
 		return nil, fmt.Errorf("qdrant query: %w", err)
 	}

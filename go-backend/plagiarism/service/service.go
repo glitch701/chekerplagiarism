@@ -193,9 +193,6 @@ func (s *plagiarismService) SearchText(ctx context.Context, query string, limit 
 	if limit < 1 {
 		limit = 5
 	}
-	if threshold <= 0 {
-		threshold = s.threshold
-	}
 	embeddings, err := s.embedder.EmbedQuery(ctx, []string{query})
 	if err != nil {
 		return nil, fmt.Errorf("embed: %w", err)
@@ -269,18 +266,9 @@ func (s *plagiarismService) CheckPlagiarism(ctx context.Context, filename string
 		matchedSet[i] = struct{}{}
 	}
 
-	total := len(chunks)
-	matched := len(matchedSet)
-	plagPercent := float32(0)
-	if total > 0 {
-		plagPercent = float32(matched) / float32(total) * 100
-	}
-
 	return &model.CheckResult{
-		TotalChunks:        total,
-		MatchedChunks:      matched,
-		PlagiarismPercent:  plagPercent,
-		OriginalityPercent: 100 - plagPercent,
-		Matches:            matches,
+		TotalChunks:   len(chunks),
+		MatchedChunks: len(matchedSet),
+		Matches:       matches,
 	}, nil
 }
